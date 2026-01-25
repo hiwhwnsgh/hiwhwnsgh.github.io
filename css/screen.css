@@ -1,0 +1,573 @@
+/* ==========================================================================
+   Base
+   ========================================================================== */
+
+* {
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: #fff;
+  color: #111;
+
+  /* Korean + English sans (system first) */
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo",
+    "Malgun Gothic", "Noto Sans KR", Arial, sans-serif;
+
+  /* Slightly larger than Tom original for readability */
+  font-size: 14.5px;
+  line-height: 1.6;
+
+  /* Tom-like outer centering */
+  text-align: center;
+}
+
+table {
+  font-size: inherit;
+  font: 100%;
+}
+
+/* Typography */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-size: 100%;
+}
+
+p {
+  margin: 1em 0;
+}
+
+/* Global links (keep classic) */
+a {
+  color: #00a;
+  text-decoration: none;
+}
+a:hover {
+  color: #000;
+  text-decoration: underline;
+}
+a:visited {
+  color: #a0a;
+}
+
+/* ==========================================================================
+   Layout
+   ========================================================================== */
+
+.site {
+  font-size: 100%;
+  text-align: justify;
+
+  max-width: 42em;
+  margin: 3em auto 2em;
+  padding: 0 16px;
+
+  line-height: 1.5em;
+}
+
+.title {
+  color: #a00;
+  font-weight: bold;
+  margin-bottom: 2em;
+}
+
+.site .title a {
+  color: #a00;
+  text-decoration: none;
+}
+.site .title a:hover {
+  color: #000;
+  text-decoration: none;
+}
+
+.site .title a.extra {
+  color: #aaa;
+  text-decoration: none;
+  margin-left: 1em;
+}
+.site .title a.extra:hover {
+  color: #000;
+}
+
+.site .meta {
+  color: #aaa;
+}
+
+/* ==========================================================================
+   Home / Lists
+   ========================================================================== */
+
+ul.posts {
+  list-style: none;
+  margin-bottom: 1.8em;
+}
+
+ul.posts li {
+  line-height: 1.75em;
+  font-size: 95%;
+}
+
+ul.posts span {
+  color: #aaa;
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
+  font-size: 80%;
+}
+
+/* Make post titles not look like blue links on home lists */
+ul.posts a {
+  color: #111;
+  text-decoration: none;
+}
+ul.posts a:visited {
+  color: #111;
+}
+ul.posts a:hover {
+  color: #a00;
+  text-decoration: underline;
+}
+
+/* More button (only shown when > limit) */
+a.more {
+  display: inline-block;
+  margin: 0.2em 0 1.2em;
+  padding: 0.15em 0.55em;
+
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #fafafa;
+
+  color: #555;
+  font-size: 90%;
+  text-decoration: none;
+}
+a.more:hover {
+  color: #000;
+  border-color: #bbb;
+  background: #fff;
+  text-decoration: none;
+}
+
+/* ==========================================================================
+   Post (Readability-first)
+   ========================================================================== */
+
+#post {
+  /* Make Korean spacing look natural */
+  text-align: left;
+
+  /* Readability */
+  font-size: 100%;
+  line-height: 1.7;
+
+  /* Prevent layout break by long URLs */
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+#post .meta {
+  margin: 0.2em 0 1.2em;
+  font-size: 90%;
+  color: #aaa;
+}
+
+/* Headings scale (balanced for KR/EN) */
+#post h1 {
+  font-size: 1.65em;
+  line-height: 1.25;
+  margin: 0 0 0.35em;
+  letter-spacing: -0.01em;
+}
+#post h2 {
+  font-size: 1.25em;
+  line-height: 1.3;
+  margin: 1.6em 0 0.6em;
+  letter-spacing: -0.01em;
+}
+#post h3 {
+  font-size: 1.1em;
+  line-height: 1.35;
+  margin: 1.4em 0 0.5em;
+}
+
+/* Paragraph spacing */
+#post p {
+  margin: 0.9em 0;
+}
+
+/* Lists */
+#post ul,
+#post ol {
+  margin-left: 1.35em;
+}
+
+/* Images */
+#post img {
+  max-width: 100%;
+  height: auto;
+  padding: 1em 0;
+}
+
+/* Code containers (visual only; fonts/highlight in syntax.css) */
+#post pre {
+  border: 1px solid #ddd;
+  background: #eef;
+  padding: 0.6em 0.8em;
+  overflow: auto;
+  border-radius: 6px;
+  line-height: 1.55;
+}
+
+#post code {
+  border: 1px solid #ddd;
+  background: #eef;
+  font-size: 0.9em;
+  padding: 0.1em 0.25em;
+  border-radius: 4px;
+}
+
+#post pre code {
+  border: none;
+  background: transparent;
+  padding: 0;
+}
+
+/* Blockquote (optional but improves readability) */
+#post blockquote {
+  margin: 1.2em 0;
+  padding: 0.2em 0 0.2em 1em;
+  border-left: 4px solid #eee;
+  color: #555;
+}
+
+/* Terminal blocks */
+#post pre.terminal {
+  border: 1px solid #000;
+  background: #333;
+  color: #fff;
+}
+#post pre.terminal code {
+  background: transparent;
+}
+
+/* Related */
+#related {
+  margin-top: 2em;
+}
+#related h2 {
+  margin-bottom: 1em;
+}
+
+/* ==========================================================================
+   Footer
+   ========================================================================== */
+
+.site .footer {
+  font-size: 80%;
+  color: #666;
+  border-top: 4px solid #eee;
+  margin-top: 2em;
+  overflow: hidden;
+}
+
+.site .footer .contact {
+  float: left;
+  margin-right: 3em;
+}
+
+.site .footer .contact a {
+  color: #8085c1;
+}
+
+/* RSS (fix clipping + match text size) */
+.site .footer .rss {
+  margin-top: 1.1em;
+  float: right;
+  padding-right: 2px;
+}
+
+.site .footer .rss a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  padding: 2px;
+  text-decoration: none;
+  color: #8085c1;
+}
+
+.site .footer .rss a:hover {
+  color: #000;
+}
+
+.site .footer .rss img {
+  width: 1em;
+  height: 1em;
+  display: block;
+  border: 0;
+}
+
+.site .footer .rss span {
+  font-size: inherit;
+  line-height: normal;
+}
+
+/* ==========================================================================
+   Responsive Design
+   ========================================================================== */
+
+/* Tablet and below */
+@media (max-width: 768px) {
+  body {
+    font-size: 14px;
+  }
+
+  .site {
+    margin: 2em auto 1.5em;
+    padding: 0 16px;
+  }
+
+  .title {
+    margin-bottom: 1.5em;
+  }
+
+  .title a.extra {
+    margin-left: 0.8em;
+    font-size: 90%;
+  }
+
+  #post {
+    line-height: 1.65;
+  }
+
+  #post h1 {
+    font-size: 1.5em;
+  }
+
+  #post h2 {
+    font-size: 1.2em;
+    margin: 1.4em 0 0.5em;
+  }
+
+  #post h3 {
+    font-size: 1.05em;
+    margin: 1.2em 0 0.4em;
+  }
+
+  #post p {
+    margin: 0.8em 0;
+  }
+
+  #post ul,
+  #post ol {
+    margin-left: 1.2em;
+  }
+
+  #post pre {
+    padding: 0.5em 0.7em;
+    font-size: 0.9em;
+  }
+
+  #post code {
+    font-size: 0.85em;
+    padding: 0.08em 0.2em;
+  }
+
+  a.more {
+    padding: 0.2em 0.6em;
+    font-size: 88%;
+  }
+}
+
+/* Mobile phones */
+@media (max-width: 480px) {
+  body {
+    font-size: 13.5px;
+    line-height: 1.55;
+  }
+
+  .site {
+    margin: 1.5em auto 1em;
+    padding: 0 14px;
+  }
+
+  .title {
+    margin-bottom: 1.2em;
+    font-size: 95%;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+  }
+
+  .title > a:first-child {
+    width: 100%;
+    margin-bottom: 0.3em;
+  }
+
+  .title a.extra {
+    display: inline-block;
+    margin: 0 0.5em 0 0;
+    font-size: 85%;
+  }
+
+  .title a.extra:first-of-type {
+    margin-left: 0;
+  }
+
+  ul.posts {
+    margin-bottom: 1.5em;
+  }
+
+  ul.posts li {
+    line-height: 1.7em;
+    font-size: 93%;
+    margin-bottom: 0.3em;
+  }
+
+  ul.posts span {
+    font-size: 75%;
+    display: block;
+    margin-bottom: 0.2em;
+  }
+
+  #post {
+    font-size: 95%;
+    line-height: 1.6;
+  }
+
+  #post .meta {
+    font-size: 85%;
+    margin: 0.15em 0 1em;
+  }
+
+  #post h1 {
+    font-size: 1.4em;
+    line-height: 1.2;
+    margin: 0 0 0.3em;
+  }
+
+  #post h2 {
+    font-size: 1.15em;
+    line-height: 1.25;
+    margin: 1.3em 0 0.45em;
+  }
+
+  #post h3 {
+    font-size: 1.05em;
+    line-height: 1.3;
+    margin: 1.1em 0 0.35em;
+  }
+
+  #post p {
+    margin: 0.75em 0;
+  }
+
+  #post ul,
+  #post ol {
+    margin-left: 1.1em;
+  }
+
+  #post img {
+    padding: 0.8em 0;
+  }
+
+  #post pre {
+    padding: 0.45em 0.6em;
+    font-size: 0.85em;
+    line-height: 1.5;
+    border-radius: 4px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #post code {
+    font-size: 0.8em;
+    padding: 0.06em 0.18em;
+    border-radius: 3px;
+  }
+
+  #post blockquote {
+    margin: 1em 0;
+    padding: 0.15em 0 0.15em 0.8em;
+    border-left-width: 3px;
+    font-size: 95%;
+  }
+
+  a.more {
+    display: block;
+    text-align: center;
+    margin: 0.3em 0 1em;
+    padding: 0.25em 0.7em;
+    font-size: 85%;
+  }
+
+  #related {
+    margin-top: 1.5em;
+  }
+
+  #related h2 {
+    margin-bottom: 0.8em;
+    font-size: 1.1em;
+  }
+
+  .site .footer {
+    font-size: 75%;
+    margin-top: 1.5em;
+    padding-top: 1em;
+  }
+
+  .site .footer .contact {
+    float: none;
+    margin-right: 0;
+    margin-bottom: 0.8em;
+  }
+
+  .site .footer .rss {
+    float: none;
+    margin-top: 0.6em;
+  }
+}
+
+/* Very small phones */
+@media (max-width: 360px) {
+  body {
+    font-size: 13px;
+  }
+
+  .site {
+    padding: 0 12px;
+  }
+
+  .title a.extra {
+    font-size: 80%;
+    margin: 0.25em 0.4em 0 0;
+  }
+
+  #post h1 {
+    font-size: 1.3em;
+  }
+
+  #post h2 {
+    font-size: 1.1em;
+  }
+
+  #post pre {
+    font-size: 0.8em;
+    padding: 0.4em 0.5em;
+  }
+
+  #post code {
+    font-size: 0.75em;
+  }
+}

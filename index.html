@@ -1,0 +1,60 @@
+---
+layout: default
+title: home
+---
+
+<div id="home">
+  <!-- Dev -->
+  <h1>Dev</h1>
+  {% assign dev_posts = site.categories.dev | default: empty %} {% if dev_posts
+  and dev_posts.size > 0 %}
+  <ul class="posts">
+    {% for post in dev_posts limit: 30 %}
+    <li>
+      <span>{{ post.date | date: "%d %b %Y" }}</span> &raquo;
+      <a href="{{ post.url | relative_url }}">{{ post.title }}</a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% if dev_posts.size > 30 %}
+  <p><a class="more" href="{{ '/dev/' | relative_url }}">More</a></p>
+  {% endif %} {% else %}
+  <p class="meta">No posts yet.</p>
+  {% endif %}
+
+  <!-- Life -->
+  <h1>Life</h1>
+  {% assign life_posts = site.categories.life | default: empty %} {% if
+  life_posts and life_posts.size > 0 %}
+  <ul class="posts">
+    {% for post in life_posts limit: 30 %}
+    <li>
+      <span>{{ post.date | date: "%d %b %Y" }}</span> &raquo;
+      <a href="{{ post.url | relative_url }}">{{ post.title }}</a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% if life_posts.size > 30 %}
+  <p><a class="more" href="{{ '/life/' | relative_url }}">More</a></p>
+  {% endif %} {% else %}
+  <p class="meta">No posts yet.</p>
+  {% endif %}
+
+  <!-- Interests -->
+  <h1>Interests</h1>
+  {% assign interests_posts = site.categories.interests | default: empty %} {%
+  if interests_posts and interests_posts.size > 0 %}
+  <ul class="posts">
+    {% for post in interests_posts limit: 30 %}
+    <li>
+      <span>{{ post.date | date: "%d %b %Y" }}</span> &raquo;
+      <a href="{{ post.url | relative_url }}">{{ post.title }}</a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% if interests_posts.size > 30 %}
+  <p><a class="more" href="{{ '/interests/' | relative_url }}">More</a></p>
+  {% endif %} {% else %}
+  <p class="meta">No posts yet.</p>
+  {% endif %}
+</div>

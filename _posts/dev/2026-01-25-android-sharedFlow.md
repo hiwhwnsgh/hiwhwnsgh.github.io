@@ -12,11 +12,17 @@ tags: [Android, Kotlin, Coroutines, Flow]
 예를 들어, 토스트 메시지 출력, 화면 이동, 혹은 특정 데이터 수신 알림 등이 그렇습니다. 이러한 **일회성 이벤트**를 가장 효율적으로 다루기 위해 제가 선택한 `SharedFlow` 전략을 공유합니다.
 
 ---
+
 ### 2. MutableSharedFlow의 전략적 설계
 
 프로젝트에서 사용한 이벤트 전달 파이프라인의 핵심 코드입니다.
+
 ```kotlin
- private val _eventFlow = MutableSharedFlow<String>( replay = 1, // 최신 이벤트 1개는 저장했다가 새로운 구독자에게 바로 전달 onBufferOverflow = BufferOverflow.DROP_OLDEST // 버퍼가 차면 오래된 것부터 버림 (성능 최적화) ) val eventFlow = _eventFlow.asSharedFlow()
+     private val _eventFlow = MutableSharedFlow<String>(
+        replay = 1, // 최신 이벤트 1개는 저장했다가 새로운 구독자에게 바로 전달 
+        onBufferOverflow = BufferOverflow.DROP_OLDEST // 버퍼가 차면 오래된 것부터 버림 (성능 최적화) 
+    )
+    val eventFlow = _eventFlow.asSharedFlow()
  ```
 
 이 짧은 선언에는 세 가지 중요한 설계 의도가 담겨 있습니다.
@@ -52,15 +58,16 @@ tags: [Android, Kotlin, Coroutines, Flow]
 
 Compose 환경에서는 다음과 같이 이 이벤트를 안전하게 수집할 수 있습니다.
 ```kotlin
-@Composable 
-fun EventScreen(viewModel: ViewModel) { 
+@Composable
+fun EventScreen(viewModel: ViewModel) {
     val lifecycleOwner = LocalLifecycleOwner.current
     LaunchedEffect(viewModel.eventFlow) {
-    viewModel.eventFlow.collect { message ->
-        // 토스트를 띄우거나 화면을 이동하는 등의 이벤트 처리
-        println("Received event: $message")
+        viewModel.eventFlow.collect { message ->
+            // 토스트를 띄우거나 화면을 이동하는 등의 이벤트 처리
+            println("Received event: $message")
+        }
     }
-}}
+}
 ```
 ---
 

@@ -79,5 +79,5 @@ fun EventScreen(viewModel: ViewModel) {
 
 ---
 **참고 자료**
-- [Kotlin 공식 문서 - SharedFlow](https://kotlinlang.org/api/kotlinx-coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-shared-flow/)
+- [Kotlin 공식 문서 - SharedFlow](https://developer.android.com/kotlin/flow/stateflow-and-sharedflow?hl=ko)
 - [Android Developers - Flow Guide](https://developer.android.com/kotlin/flow)

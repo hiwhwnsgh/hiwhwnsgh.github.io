@@ -4,6 +4,14 @@ title: home
 ---
 
 <div id="home">
+<p class="legacy-min">
+  <a href="{{ site.tistory_url }}" target="_blank" rel="noopener">
+    이전 블로그 <span aria-hidden="true">↗</span>
+  </a>
+</p>
+
+
+
   <!-- Dev -->
   <h1>Dev</h1>
   {% assign dev_posts = site.categories.dev | default: empty %} {% if dev_posts

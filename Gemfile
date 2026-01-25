@@ -1,7 +1,7 @@
 source "https://rubygems.org"
 
 # Jekyll 3.9 is compatible with Ruby 2.4+ (more stable for Ruby 2.6)
-gem "jekyll", "~> 3.9"
+gem "jekyll", "~> 4.4"
 gem "jekyll-feed", "~> 0.15"
 
 # Markdown parser for GitHub Flavored Markdown

@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <!-- Google Tag Manager -->
+    <script>
+      (function (w, d, s, l, i) {
+        w[l] = w[l] || [];
+        w[l].push({ "gtm.start": new Date().getTime(), event: "gtm.js" });
+        var f = d.getElementsByTagName(s)[0],
+          j = d.createElement(s),
+          dl = l != "dataLayer" ? "&l=" + l : "";
+        j.async = true;
+        j.src = "https://www.googletagmanager.com/gtm.js?id=" + i + dl;
+        f.parentNode.insertBefore(j, f);
+      })(window, document, "script", "dataLayer", "GTM-XXXXXXX");
+    </script>
+    <!-- End Google Tag Manager -->
+
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>
+      Android + Ktor로 배우는 FCM 푸시(1) · JunhoCho's Dev Log
+    </title><meta name="description" content="A blog about software development, programming, and technology." /><meta name="author" content="Junho Cho" /><!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="http://localhost:4000/dev/2026/01/25/fcm.html" />
+    <meta
+      property="og:title"
+      content="Android + Ktor로 배우는 FCM 푸시(1) · JunhoCho's Dev Log"
+    /><meta property="og:description" content="A blog about software development, programming, and technology." /><meta property="og:image" content="http://localhost:4000/images/og-image.png" /><!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="Android + Ktor로 배우는 FCM 푸시(1) · JunhoCho's Dev Log"
+    /><meta
+      name="twitter:description"
+      content="A blog about software development, programming, and technology."
+    /><meta name="twitter:image" content="http://localhost:4000/images/og-image.png" /><!-- CSS -->
+    <link rel="stylesheet" href="/css/syntax.css" />
+    <link rel="stylesheet" href="/css/screen.css" />
+
+    <!-- RSS (선택) --></head>
+  <!-- Google tag (gtag.js) -->
+  <script
+    async
+    src="https://www.googletagmanager.com/gtag/js?id=G-1XJ0GDJZWG"
+  ></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() {
+      dataLayer.push(arguments);
+    }
+    gtag("js", new Date());
+
+    gtag("config", "G-1XJ0GDJZWG");
+  </script>
+  <body>
+    <!-- Google Tag Manager (noscript) -->
+    <noscript
+      ><iframe
+        src="https://www.googletagmanager.com/ns.html?id=GTM-TQNS23Z8"
+        height="0"
+        width="0"
+        style="display: none; visibility: hidden"
+      ></iframe
+    ></noscript>
+    <!-- End Google Tag Manager (noscript) -->
+    <div class="site">
+      <div class="title">
+        <a href="/">JunhoCho's Dev Log</a>
+        <a class="extra" href="/">home</a>
+        <a class="extra" href="/dev/">dev</a>
+        <a class="extra" href="/life/">life</a>
+        <a class="extra" href="/interests/">interests</a>
+      </div>
+
+      <div id="post">
+  <h1>Android + Ktor로 배우는 FCM 푸시(1)</h1>
+  <p class="meta">25 Jan 2026</p>
+  <h1 id="androidfcm-알림-서비스-구현-전-테스트로-시작해-딥다이브까지-fcm-내부-원리-파헤치기">[Android/FCM] 알림 서비스 구현 전, 테스트로 시작해 딥다이브까지: FCM 내부 원리 파헤치기</h1>
+
+<h3 id="0-시작하며-그저-테스트-한-번-해보려-했을-뿐인데">0. 시작하며: “그저 테스트 한 번 해보려 했을 뿐인데…”</h3>
+
+<p>최근 프로젝트를 진행하며 알림 기능을 넣기 전, FCM(Firebase Cloud Messaging)이 어떻게 돌아가는지 가볍게 테스트를 시작했습니다.</p>
+
+<p>단순히 공식 문서를 보고 코드를 복사해서 붙여넣을 수도 있었지만, 코드 속에 보이는 생소한 어노테이션들과 데이터 흐름을 추적하다 보니 어느덧 <strong>안드로이드의 비동기 처리와 멀티스레드 안정성</strong>을 공부하는 딥다이브 여정이 되었습니다. 그 과정에서 배운 핵심 내용들을 정리해 봅니다.</p>
+
+<hr />
+<h3 id="1-코드-속의-숨은-안전장치-volatile과-guardedby">1. 코드 속의 숨은 안전장치: @Volatile과 @GuardedBy</h3>
+
+<p>Firebase 라이브러리 내부나 싱글톤 패턴을 구현한 <code class="language-plaintext highlighter-rouge">FcmRepositoryImpl</code>을 분석하다 보면 재미있는 어노테이션들이 등장합니다.</p>
+
+<ul>
+  <li><strong><code class="language-plaintext highlighter-rouge">@Volatile</code></strong>: 변수의 값을 CPU 캐시가 아닌 <strong>메인 메모리</strong>에서 직접 읽고 쓰게 합니다. 여러 스레드가 동시에 접근할 때 “값의 불일치”를 방지하여, 싱글톤 객체가 중복 생성되는 것을 막아주는 핵심 역할을 합니다.</li>
+  <li><strong><code class="language-plaintext highlighter-rouge">@GuardedBy("FirebaseMessaging.class")</code></strong>: 이 어노테이션은 “이 데이터는 위험하니까 반드시 지정된 자물쇠(Lock)를 소유한 상태에서만 사용해!”라는 뜻입니다. 멀티스레드 환경에서 발생할 수 있는 데이터 오염(Race Condition)을 방지하기 위한 선언적인 안전장치입니다.</li>
+</ul>
+
+<hr />
+<h3 id="2-수신대기소--firebasemessagingservice">2. 수신대기소 : FirebaseMessagingService</h3>
+<h4 id="1-firebasemessagingservice란">(1) FirebaseMessagingService란?</h4>
+<p>FCM 서버로부터 백그라운드에서 메시지를 수신하고, 토큰이 변경되었을 때 이벤트를 처리하는 안드로이드 서비스(Service) 클래스입니다.
+이 클래스는 사용자가 앱을 사용하고 있지 않을 때도(백그라운드 상태) 시스템에 의해 실행되어 메시지를 처리할 수 있게 해줍니다.</p>
+<h4 id="2-핵심-메서드-2가지">(2) 핵심 메서드 2가지</h4>
+<h5 id="onmessagereceivedremotemessage-remotemessage"><code class="language-plaintext highlighter-rouge">onMessageReceived(remoteMessage: RemoteMessage)</code></h5>
+<ul>
+  <li><strong>역할:</strong> FCM 서버에서 보낸 메시지가 내 기기에 도착했을 때 호출됩니다.</li>
+  <li><strong>포그라운드(앱 실행 중):</strong> 메시지가 오면 이 메서드가 즉시 호출됩니다. 작성하신 코드처럼 <code class="language-plaintext highlighter-rouge">fcmRepository.emitMessage(body)</code>를 통해 UI에 바로 뿌려줄 수 있죠.</li>
+  <li><strong>백그라운드(앱 종료/숨김):</strong>
+    <ul>
+      <li><strong>Notification 메시지</strong>: 시스템이 자동으로 알림창을 띄우고, 이 메서드는 호출되지 않을 수 있습니다.</li>
+      <li><strong>Data 메시지</strong>: 앱이 백그라운드에 있어도 이 메서드가 호출되어 데이터를 처리할 수 있습니다.
+        <h5 id="onnewtokentoken-string"><code class="language-plaintext highlighter-rouge">onNewToken(token: String)</code></h5>
+      </li>
+    </ul>
+  </li>
+  <li><strong>역할:</strong> 기기의 등록 토큰이 처음 생성되거나, 보안상의 이유로 갱신되었을 때 호출됩니다.</li>
+  <li><strong>지식 포인트:</strong>
+    <ul>
+      <li>토큰은 영구적이지 않습니다. 앱을 지웠다 깔거나, 데이터를 삭제하면 바뀝니다.</li>
+      <li>실제 서비스라면: 여기서 받은 token을 백엔드 서버(API 서버)로 보내서 저장해야 합니다. 그래야 나중에 서버가 <strong>이 사용자에게 푸시 보내줘</strong>라고 FCM에 요청할 수 있으니까요.
+        <h4 id="3-왜-이게-서비스service인가요">(3) 왜 이게 ‘서비스(Service)’인가요?</h4>
+        <p>안드로이드에서 서비스는 <strong>화면 없이 뒤에서 돌아가는 컴포넌트</strong>입니다.</p>
+      </li>
+    </ul>
+  </li>
+  <li>푸시 알림은 사용자가 유튜브를 보든, 게임을 하든, 폰을 꺼두든 상관없이 와야 합니다.</li>
+  <li>따라서 Activity(화면)가 아닌 Service(백그라운드 작업자) 형태를 띠는 것입니다.</li>
+</ul>
+
+<hr />
+
+
+</div>
+
+
+      <div class="footer">
+        <div class="contact">
+          <p>
+            Junho Cho<br />Software Engineer<br /><a href="mailto:hiwhwnsgh@gmail.com">hiwhwnsgh@gmail.com</a></p>
+        </div>
+
+        <div class="contact">
+          <p><a href="https://github.com/SanghyeungLee">github</a><br /></p>
+        </div><div class="rss">
+          <a href="/feed.xml">
+            <img src="/images/rss.png" alt="RSS" />
+            <span>RSS</span>
+          </a>
+        </div></div>
+    </div>
+  </body>
+</html>

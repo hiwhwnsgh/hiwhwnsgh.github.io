@@ -1,1 +1,127 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.4.1">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2026-01-25T18:22:26+09:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">JunhoCho’s Dev Log</title><subtitle>A blog about software development, programming, and technology.</subtitle><author><name>Junho Cho</name></author><entry><title type="html">Android + Ktor로 배우는 FCM 푸시(1)</title><link href="http://localhost:4000/dev/2026/01/25/dev.html" rel="alternate" type="text/html" title="Android + Ktor로 배우는 FCM 푸시(1)" /><published>2026-01-25T00:00:00+09:00</published><updated>2026-01-25T00:00:00+09:00</updated><id>http://localhost:4000/dev/2026/01/25/dev</id><content type="html" xml:base="http://localhost:4000/dev/2026/01/25/dev.html"><![CDATA[]]></content><author><name>Junho Cho</name></author><category term="dev" /><summary type="html"><![CDATA[]]></summary></entry></feed>
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.4.1">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2026-01-25T20:57:41+09:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">JunhoCho’s Dev Log</title><subtitle>A blog about software development, programming, and technology.</subtitle><author><name>Junho Cho</name></author><entry><title type="html">[Android] 일회성 이벤트 처리를 위한 SharedFlow 전략</title><link href="http://localhost:4000/dev/2026/01/25/android-sharedFlow.html" rel="alternate" type="text/html" title="[Android] 일회성 이벤트 처리를 위한 SharedFlow 전략" /><published>2026-01-25T00:00:00+09:00</published><updated>2026-01-25T00:00:00+09:00</updated><id>http://localhost:4000/dev/2026/01/25/android-sharedFlow</id><content type="html" xml:base="http://localhost:4000/dev/2026/01/25/android-sharedFlow.html"><![CDATA[<h3 id="1-시작하며-상태state와-이벤트event는-다르다">1. 시작하며: 상태(State)와 이벤트(Event)는 다르다</h3>
+
+<p>안드로이드 개발을 하다 보면 데이터를 UI로 전달하는 수많은 상황을 마주합니다. 보통 <code class="language-plaintext highlighter-rouge">StateFlow</code>를 사용하여 ‘현재 상태’를 유지하지만, 때로는 <strong>“특정 시점에 단 한 번 발생하는 이벤트”</strong>를 처리해야 할 때가 있습니다.</p>
+
+<p>예를 들어, 토스트 메시지 출력, 화면 이동, 혹은 특정 데이터 수신 알림 등이 그렇습니다. 이러한 <strong>일회성 이벤트</strong>를 가장 효율적으로 다루기 위해 제가 선택한 <code class="language-plaintext highlighter-rouge">SharedFlow</code> 전략을 공유합니다.</p>
+
+<hr />
+<h3 id="2-mutablesharedflow의-전략적-설계">2. MutableSharedFlow의 전략적 설계</h3>
+
+<p>프로젝트에서 사용한 이벤트 전달 파이프라인의 핵심 코드입니다.</p>
+<div class="language-kotlin highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="k">private</span> <span class="kd">val</span> <span class="py">_eventFlow</span> <span class="p">=</span> <span class="nc">MutableSharedFlow</span><span class="p">&lt;</span><span class="nc">String</span><span class="p">&gt;(</span> <span class="n">replay</span> <span class="p">=</span> <span class="mi">1</span><span class="p">,</span> <span class="c1">// 최신 이벤트 1개는 저장했다가 새로운 구독자에게 바로 전달 onBufferOverflow = BufferOverflow.DROP_OLDEST // 버퍼가 차면 오래된 것부터 버림 (성능 최적화) ) val eventFlow = _eventFlow.asSharedFlow()</span>
+</code></pre></div></div>
+
+<p>이 짧은 선언에는 세 가지 중요한 설계 의도가 담겨 있습니다.</p>
+
+<hr />
+
+<h3 id="3-왜-sharedflow인가-핵심-파헤치기">3. 왜 SharedFlow인가? (핵심 파헤치기)</h3>
+
+<h4 id="1-왜-stateflow가-아닌가">(1) 왜 StateFlow가 아닌가?</h4>
+<p>안드로이드에서 가장 많이 쓰이는 두 Flow의 차이점은 명확합니다.</p>
+
+<ul>
+  <li><strong>StateFlow</strong>: 항상 현재 상태(State)를 가지고 있어야 합니다. 초기값이 필수이며, UI는 언제나 최신 상태를 반영합니다.</li>
+  <li><strong>SharedFlow</strong>: <strong>특정 이벤트(Event)</strong>를 전달할 때 사용합니다. 초기값이 필요 없으며, 발생한 사건을 구독자들에게 전파하는 데 집중합니다.</li>
+</ul>
+
+<blockquote>
+  <p>[!NOTE]
+“현재 로딩 중인가?”는 상태(<code class="language-plaintext highlighter-rouge">StateFlow</code>)이지만, “데이터 수신이 완료됨!”은 이벤트(<code class="language-plaintext highlighter-rouge">SharedFlow</code>)입니다. 이벤트가 없을 때 억지로 “상태 없음”이라는 초기값을 유지할 필요가 없기 때문에 <code class="language-plaintext highlighter-rouge">SharedFlow</code>가 이벤트 처리에 더 적합합니다.</p>
+</blockquote>
+
+<h4 id="2-replay--1의-마법-최신-데이터-보존">(2) <code class="language-plaintext highlighter-rouge">replay = 1</code>의 마법: 최신 데이터 보존</h4>
+<p>일반적인 이벤트는 발행되는 순간 구독자가 없으면 소멸합니다. 하지만 <code class="language-plaintext highlighter-rouge">replay = 1</code>은 보험과 같습니다.</p>
+
+<ul>
+  <li><strong>의미</strong>: “가장 최근에 발생한 이벤트 1개를 기억하고 있다가, 새로운 구독자가 나타나면 즉시 전달해 줘”라는 뜻입니다.</li>
+  <li><strong>실제 활용</strong>: 사용자가 잠시 화면을 전환하거나 configuration change(화면 회전 등)가 일어나는 찰나에 이벤트가 발생하더라도, 다시 구독을 시작할 때 해당 이벤트를 놓치지 않고 처리할 수 있게 해줍니다.</li>
+</ul>
+
+<h4 id="3-onbufferoverflow--bufferoverflowdrop_oldest">(3) <code class="language-plaintext highlighter-rouge">onBufferOverflow = BufferOverflow.DROP_OLDEST</code></h4>
+<p>시스템 리소스는 유한합니다. 이벤트가 처리 속도보다 빠르게 대량으로 발생할 때를 대비해야 합니다.</p>
+
+<ul>
+  <li><strong>의미</strong>: 버퍼가 꽉 차면 <strong>가장 오래된 낡은 메시지를 버리고</strong> 최신 데이터를 담습니다.</li>
+  <li><strong>전략적 선택</strong>: 사용자에게 가장 중요한 것은 ‘지금 당장 벌어진 최신 일’입니다. 성능을 유지하면서도 사용자에게 가장 유효한 정보를 보장하기 위한 설정입니다.</li>
+</ul>
+
+<hr />
+
+<h3 id="4-compose에서의-활용-sample">4. Compose에서의 활용 (Sample)</h3>
+
+<p>Compose 환경에서는 다음과 같이 이 이벤트를 안전하게 수집할 수 있습니다.</p>
+<div class="language-kotlin highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@Composable</span> 
+<span class="k">fun</span> <span class="nf">EventScreen</span><span class="p">(</span><span class="n">viewModel</span><span class="p">:</span> <span class="nc">ViewModel</span><span class="p">)</span> <span class="p">{</span> 
+    <span class="kd">val</span> <span class="py">lifecycleOwner</span> <span class="p">=</span> <span class="nc">LocalLifecycleOwner</span><span class="p">.</span><span class="n">current</span>
+    <span class="nc">LaunchedEffect</span><span class="p">(</span><span class="n">viewModel</span><span class="p">.</span><span class="n">eventFlow</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">viewModel</span><span class="p">.</span><span class="n">eventFlow</span><span class="p">.</span><span class="nf">collect</span> <span class="p">{</span> <span class="n">message</span> <span class="p">-&gt;</span>
+        <span class="c1">// 토스트를 띄우거나 화면을 이동하는 등의 이벤트 처리</span>
+        <span class="nf">println</span><span class="p">(</span><span class="s">"Received event: $message"</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}}</span>
+</code></pre></div></div>
+<hr />
+
+<h3 id="5-마치며">5. 마치며</h3>
+
+<p>단순히 <code class="language-plaintext highlighter-rouge">Flow</code>를 사용하는 것을 넘어, <code class="language-plaintext highlighter-rouge">replay</code>와 <code class="language-plaintext highlighter-rouge">BufferOverflow</code> 정책을 고민하는 과정에서 <strong>안드로이드의 비동기 스트림</strong>이 얼마나 정교한지 배울 수 있었습니다.</p>
+
+<p>이벤트의 성격에 따라 이 파라미터들을 조절하는 것만으로도, 훨씬 견고하고 반응성 좋은 앱을 만들 수 있습니다. 오늘 공유한 <code class="language-plaintext highlighter-rouge">SharedFlow</code> 전략이 여러분의 프로젝트에도 도움이 되길 바랍니다.</p>
+
+<hr />
+<p><strong>참고 자료</strong></p>
+<ul>
+  <li><a href="https://kotlinlang.org/api/kotlinx-coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-shared-flow/">Kotlin 공식 문서 - SharedFlow</a></li>
+  <li><a href="https://developer.android.com/kotlin/flow">Android Developers - Flow Guide</a></li>
+</ul>]]></content><author><name>Junho Cho</name></author><category term="dev" /><category term="Android" /><category term="Kotlin" /><category term="Coroutines" /><category term="Flow" /><summary type="html"><![CDATA[1. 시작하며: 상태(State)와 이벤트(Event)는 다르다]]></summary></entry><entry><title type="html">Android + Ktor로 배우는 FCM 푸시(1)</title><link href="http://localhost:4000/dev/2026/01/25/fcm.html" rel="alternate" type="text/html" title="Android + Ktor로 배우는 FCM 푸시(1)" /><published>2026-01-25T00:00:00+09:00</published><updated>2026-01-25T00:00:00+09:00</updated><id>http://localhost:4000/dev/2026/01/25/fcm</id><content type="html" xml:base="http://localhost:4000/dev/2026/01/25/fcm.html"><![CDATA[<h1 id="androidfcm-알림-서비스-구현-전-테스트로-시작해-딥다이브까지-fcm-내부-원리-파헤치기">[Android/FCM] 알림 서비스 구현 전, 테스트로 시작해 딥다이브까지: FCM 내부 원리 파헤치기</h1>
+
+<h3 id="0-시작하며-그저-테스트-한-번-해보려-했을-뿐인데">0. 시작하며: “그저 테스트 한 번 해보려 했을 뿐인데…”</h3>
+
+<p>최근 프로젝트를 진행하며 알림 기능을 넣기 전, FCM(Firebase Cloud Messaging)이 어떻게 돌아가는지 가볍게 테스트를 시작했습니다.</p>
+
+<p>단순히 공식 문서를 보고 코드를 복사해서 붙여넣을 수도 있었지만, 코드 속에 보이는 생소한 어노테이션들과 데이터 흐름을 추적하다 보니 어느덧 <strong>안드로이드의 비동기 처리와 멀티스레드 안정성</strong>을 공부하는 딥다이브 여정이 되었습니다. 그 과정에서 배운 핵심 내용들을 정리해 봅니다.</p>
+
+<hr />
+<h3 id="1-코드-속의-숨은-안전장치-volatile과-guardedby">1. 코드 속의 숨은 안전장치: @Volatile과 @GuardedBy</h3>
+
+<p>Firebase 라이브러리 내부나 싱글톤 패턴을 구현한 <code class="language-plaintext highlighter-rouge">FcmRepositoryImpl</code>을 분석하다 보면 재미있는 어노테이션들이 등장합니다.</p>
+
+<ul>
+  <li><strong><code class="language-plaintext highlighter-rouge">@Volatile</code></strong>: 변수의 값을 CPU 캐시가 아닌 <strong>메인 메모리</strong>에서 직접 읽고 쓰게 합니다. 여러 스레드가 동시에 접근할 때 “값의 불일치”를 방지하여, 싱글톤 객체가 중복 생성되는 것을 막아주는 핵심 역할을 합니다.</li>
+  <li><strong><code class="language-plaintext highlighter-rouge">@GuardedBy("FirebaseMessaging.class")</code></strong>: 이 어노테이션은 “이 데이터는 위험하니까 반드시 지정된 자물쇠(Lock)를 소유한 상태에서만 사용해!”라는 뜻입니다. 멀티스레드 환경에서 발생할 수 있는 데이터 오염(Race Condition)을 방지하기 위한 선언적인 안전장치입니다.</li>
+</ul>
+
+<hr />
+<h3 id="2-수신대기소--firebasemessagingservice">2. 수신대기소 : FirebaseMessagingService</h3>
+<h4 id="1-firebasemessagingservice란">(1) FirebaseMessagingService란?</h4>
+<p>FCM 서버로부터 백그라운드에서 메시지를 수신하고, 토큰이 변경되었을 때 이벤트를 처리하는 안드로이드 서비스(Service) 클래스입니다.
+이 클래스는 사용자가 앱을 사용하고 있지 않을 때도(백그라운드 상태) 시스템에 의해 실행되어 메시지를 처리할 수 있게 해줍니다.</p>
+<h4 id="2-핵심-메서드-2가지">(2) 핵심 메서드 2가지</h4>
+<h5 id="onmessagereceivedremotemessage-remotemessage"><code class="language-plaintext highlighter-rouge">onMessageReceived(remoteMessage: RemoteMessage)</code></h5>
+<ul>
+  <li><strong>역할:</strong> FCM 서버에서 보낸 메시지가 내 기기에 도착했을 때 호출됩니다.</li>
+  <li><strong>포그라운드(앱 실행 중):</strong> 메시지가 오면 이 메서드가 즉시 호출됩니다. 작성하신 코드처럼 <code class="language-plaintext highlighter-rouge">fcmRepository.emitMessage(body)</code>를 통해 UI에 바로 뿌려줄 수 있죠.</li>
+  <li><strong>백그라운드(앱 종료/숨김):</strong>
+    <ul>
+      <li><strong>Notification 메시지</strong>: 시스템이 자동으로 알림창을 띄우고, 이 메서드는 호출되지 않을 수 있습니다.</li>
+      <li><strong>Data 메시지</strong>: 앱이 백그라운드에 있어도 이 메서드가 호출되어 데이터를 처리할 수 있습니다.
+        <h5 id="onnewtokentoken-string"><code class="language-plaintext highlighter-rouge">onNewToken(token: String)</code></h5>
+      </li>
+    </ul>
+  </li>
+  <li><strong>역할:</strong> 기기의 등록 토큰이 처음 생성되거나, 보안상의 이유로 갱신되었을 때 호출됩니다.</li>
+  <li><strong>지식 포인트:</strong>
+    <ul>
+      <li>토큰은 영구적이지 않습니다. 앱을 지웠다 깔거나, 데이터를 삭제하면 바뀝니다.</li>
+      <li>실제 서비스라면: 여기서 받은 token을 백엔드 서버(API 서버)로 보내서 저장해야 합니다. 그래야 나중에 서버가 <strong>이 사용자에게 푸시 보내줘</strong>라고 FCM에 요청할 수 있으니까요.
+        <h4 id="3-왜-이게-서비스service인가요">(3) 왜 이게 ‘서비스(Service)’인가요?</h4>
+        <p>안드로이드에서 서비스는 <strong>화면 없이 뒤에서 돌아가는 컴포넌트</strong>입니다.</p>
+      </li>
+    </ul>
+  </li>
+  <li>푸시 알림은 사용자가 유튜브를 보든, 게임을 하든, 폰을 꺼두든 상관없이 와야 합니다.</li>
+  <li>따라서 Activity(화면)가 아닌 Service(백그라운드 작업자) 형태를 띠는 것입니다.</li>
+</ul>
+
+<hr />]]></content><author><name>Junho Cho</name></author><category term="dev" /><summary type="html"><![CDATA[[Android/FCM] 알림 서비스 구현 전, 테스트로 시작해 딥다이브까지: FCM 내부 원리 파헤치기]]></summary></entry></feed>

@@ -86,6 +86,7 @@
 <p>단순히 공식 문서를 보고 코드를 복사해서 붙여넣을 수도 있었지만, 코드 속에 보이는 생소한 어노테이션들과 데이터 흐름을 추적하다 보니 어느덧 <strong>안드로이드의 비동기 처리와 멀티스레드 안정성</strong>을 공부하는 딥다이브 여정이 되었습니다. 그 과정에서 배운 핵심 내용들을 정리해 봅니다.</p>
 
 <hr />
+
 <h3 id="1-코드-속의-숨은-안전장치-volatile과-guardedby">1. 코드 속의 숨은 안전장치: @Volatile과 @GuardedBy</h3>
 
 <p>Firebase 라이브러리 내부나 싱글톤 패턴을 구현한 <code class="language-plaintext highlighter-rouge">FcmRepositoryImpl</code>을 분석하다 보면 재미있는 어노테이션들이 등장합니다.</p>
@@ -96,39 +97,133 @@
 </ul>
 
 <hr />
+
 <h3 id="2-수신대기소--firebasemessagingservice">2. 수신대기소 : FirebaseMessagingService</h3>
+
 <h4 id="1-firebasemessagingservice란">(1) FirebaseMessagingService란?</h4>
+
 <p>FCM 서버로부터 백그라운드에서 메시지를 수신하고, 토큰이 변경되었을 때 이벤트를 처리하는 안드로이드 서비스(Service) 클래스입니다.
 이 클래스는 사용자가 앱을 사용하고 있지 않을 때도(백그라운드 상태) 시스템에 의해 실행되어 메시지를 처리할 수 있게 해줍니다.</p>
+
 <h4 id="2-핵심-메서드-2가지">(2) 핵심 메서드 2가지</h4>
+
+<div class="language-kotlin highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">class</span> <span class="nc">MyFirebaseMessagingService</span> <span class="p">:</span> <span class="nc">FirebaseMessagingService</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">override</span> <span class="k">fun</span> <span class="nf">onMessageReceived</span><span class="p">(</span><span class="n">remoteMessage</span><span class="p">:</span> <span class="nc">RemoteMessage</span><span class="p">)</span> <span class="p">{</span>
+        <span class="kd">val</span> <span class="py">body</span> <span class="p">=</span> <span class="n">remoteMessage</span><span class="p">.</span><span class="n">notification</span><span class="o">?.</span><span class="n">body</span> <span class="o">?:</span> <span class="n">remoteMessage</span><span class="p">.</span><span class="n">data</span><span class="p">[</span><span class="s">"body"</span><span class="p">]</span> <span class="o">?:</span> <span class="s">"New Message"</span>
+        <span class="n">fcmRepository</span><span class="p">.</span><span class="nf">emitMessage</span><span class="p">(</span><span class="n">body</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="k">override</span> <span class="k">fun</span> <span class="nf">onNewToken</span><span class="p">(</span><span class="n">token</span><span class="p">:</span> <span class="nc">String</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nc">Log</span><span class="p">.</span><span class="nf">d</span><span class="p">(</span><span class="nc">TAG</span><span class="p">,</span> <span class="s">"Refreshed token: $token"</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
 <h5 id="onmessagereceivedremotemessage-remotemessage"><code class="language-plaintext highlighter-rouge">onMessageReceived(remoteMessage: RemoteMessage)</code></h5>
+
 <ul>
   <li><strong>역할:</strong> FCM 서버에서 보낸 메시지가 내 기기에 도착했을 때 호출됩니다.</li>
   <li><strong>포그라운드(앱 실행 중):</strong> 메시지가 오면 이 메서드가 즉시 호출됩니다. 작성하신 코드처럼 <code class="language-plaintext highlighter-rouge">fcmRepository.emitMessage(body)</code>를 통해 UI에 바로 뿌려줄 수 있죠.</li>
   <li><strong>백그라운드(앱 종료/숨김):</strong>
     <ul>
       <li><strong>Notification 메시지</strong>: 시스템이 자동으로 알림창을 띄우고, 이 메서드는 호출되지 않을 수 있습니다.</li>
-      <li><strong>Data 메시지</strong>: 앱이 백그라운드에 있어도 이 메서드가 호출되어 데이터를 처리할 수 있습니다.
-        <h5 id="onnewtokentoken-string"><code class="language-plaintext highlighter-rouge">onNewToken(token: String)</code></h5>
-      </li>
+      <li><strong>Data 메시지</strong>: 앱이 백그라운드에 있어도 이 메서드가 호출되어 데이터를 처리할 수 있습니다.</li>
     </ul>
   </li>
+</ul>
+
+<h5 id="onnewtokentoken-string"><code class="language-plaintext highlighter-rouge">onNewToken(token: String)</code></h5>
+
+<ul>
   <li><strong>역할:</strong> 기기의 등록 토큰이 처음 생성되거나, 보안상의 이유로 갱신되었을 때 호출됩니다.</li>
   <li><strong>지식 포인트:</strong>
     <ul>
       <li>토큰은 영구적이지 않습니다. 앱을 지웠다 깔거나, 데이터를 삭제하면 바뀝니다.</li>
-      <li>실제 서비스라면: 여기서 받은 token을 백엔드 서버(API 서버)로 보내서 저장해야 합니다. 그래야 나중에 서버가 <strong>이 사용자에게 푸시 보내줘</strong>라고 FCM에 요청할 수 있으니까요.
-        <h4 id="3-왜-이게-서비스service인가요">(3) 왜 이게 ‘서비스(Service)’인가요?</h4>
-        <p>안드로이드에서 서비스는 <strong>화면 없이 뒤에서 돌아가는 컴포넌트</strong>입니다.</p>
-      </li>
+      <li>실제 서비스라면: 여기서 받은 token을 백엔드 서버(API 서버)로 보내서 저장해야 합니다. 그래야 나중에 서버가 <strong>이 사용자에게 푸시 보내줘</strong>라고 FCM에 요청할 수 있으니까요.</li>
     </ul>
   </li>
+</ul>
+
+<h4 id="3-왜-이게-서비스service인가요">(3) 왜 이게 ‘서비스(Service)’인가요?</h4>
+
+<p>안드로이드에서 서비스는 <strong>화면 없이 뒤에서 돌아가는 컴포넌트</strong>입니다.</p>
+
+<ul>
   <li>푸시 알림은 사용자가 유튜브를 보든, 게임을 하든, 폰을 꺼두든 상관없이 와야 합니다.</li>
   <li>따라서 Activity(화면)가 아닌 Service(백그라운드 작업자) 형태를 띠는 것입니다.</li>
 </ul>
 
 <hr />
 
+<h3 id="3-끊김-없는-이벤트-전달-sharedflow-전략">3. 끊김 없는 이벤트 전달: SharedFlow 전략</h3>
+<p>메시지를 <code class="language-plaintext highlighter-rouge">UI(Compose/ViewModel)</code>로 전달하기 위해 <code class="language-plaintext highlighter-rouge">MutableSharedFlow</code>를 사용했습니다.</p>
+
+<div class="language-kotlin highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">private</span> <span class="kd">val</span> <span class="py">_messageFlow</span> <span class="p">=</span> <span class="nc">MutableSharedFlow</span><span class="p">&lt;</span><span class="nc">String</span><span class="p">&gt;(</span>
+        <span class="n">replay</span> <span class="p">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">onBufferOverflow</span> <span class="p">=</span> <span class="nc">BufferOverflow</span><span class="p">.</span><span class="nc">DROP_OLDEST</span>
+    <span class="p">)</span>
+</code></pre></div></div>
+
+<p>여기에는 두 가지 전략이 담겨 있습니다.</p>
+
+<ul>
+  <li>1.<code class="language-plaintext highlighter-rouge">replay = 1</code>: 사용자가 잠시 화면을 나갔다 돌아와도, 가장 최근에 온 메시지 1개는 놓치지 않고 보여주기 위함입니다.</li>
+  <li><code class="language-plaintext highlighter-rouge">2.DROP_OLDEST</code>: 메시지가 너무 많이 쏟아질 경우, 성능을 위해 오래된 것은 버리고 가장 최신 것만 유지하는 효율적인 관리 방식입니다.</li>
+</ul>
+
+<hr />
+
+<h3 id="4-비즈니스-로직의-중심-fcmrepositoryimpl-설계">4. 비즈니스 로직의 중심: FcmRepositoryImpl 설계</h3>
+
+<p>FCM 서버와 통신하고 데이터를 가공하여 UI로 전달하는 핵심 로직은 <code class="language-plaintext highlighter-rouge">FcmRepositoryImpl</code>에서 담당합니다. 이 클래스에는 라이브러리 설계의 정석이라 불리는 몇 가지 기법이 적용되어 있습니다.</p>
+
+<h4 id="1-비동기-task를-코루틴으로-await의-활용">(1) 비동기 Task를 코루틴으로: <code class="language-plaintext highlighter-rouge">await()</code>의 활용</h4>
+<p>Firebase SDK의 많은 메서드는 <code class="language-plaintext highlighter-rouge">Task&lt;T&gt;</code> 기반의 콜백 형태입니다. 이를 현대적인 코틀린 코루틴 환경에서 깔끔하게 다루기 위해 <code class="language-plaintext highlighter-rouge">await()</code>를 사용했습니다.</p>
+
+<div class="language-kotlin highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">override</span> <span class="k">suspend</span> <span class="k">fun</span> <span class="nf">getFcmToken</span><span class="p">():</span> <span class="nc">String</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="k">try</span> <span class="p">{</span>
+            <span class="nc">FirebaseMessaging</span><span class="p">.</span><span class="nf">getInstance</span><span class="p">().</span><span class="n">token</span><span class="p">.</span><span class="nf">await</span><span class="p">()</span>
+        <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="n">e</span><span class="p">:</span> <span class="nc">Exception</span><span class="p">)</span> <span class="p">{</span>
+            <span class="s">"Error: ${e.message}"</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+</code></pre></div></div>
+
+<p>이 방식은 코드의 가독성을 높일 뿐만 아니라, 비동기 작업 중 에러가 발생했을 때 <code class="language-plaintext highlighter-rouge">try-catch</code>를 통해 예외 처리를 훨씬 직관적으로 할 수 있게 해줍니다.</p>
+
+<h4 id="2-안전한-인스턴스-보장-double-checked-locking">(2) 안전한 인스턴스 보장: Double-checked locking</h4>
+<p>Dagger나 Hilt 같은 의존성 주입(DI) 도구가 사용하지 않고 간략하게 앱 전역에서 단 하나의 인스턴스만 보장되도록 <strong>싱글톤 패턴</strong>을 구현했습니다.</p>
+
+<div class="language-kotlin highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">companion</span> <span class="k">object</span> <span class="p">{</span>
+        <span class="cm">/**
+         * DI(의존성 주입) 도구가 완벽히 설정되지 않은 환경을 위한 싱글톤 인스턴스 접근 메서드입니다.
+         * Thread-safe한 이중 잠금(Double-checked locking) 패턴을 사용합니다.
+         */</span>
+        <span class="nd">@Volatile</span>
+        <span class="k">private</span> <span class="kd">var</span> <span class="py">INSTANCE</span><span class="p">:</span> <span class="nc">FcmRepositoryImpl</span><span class="p">?</span> <span class="p">=</span> <span class="k">null</span>
+
+        <span class="k">fun</span> <span class="nf">getInstance</span><span class="p">():</span> <span class="nc">FcmRepositoryImpl</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="nc">INSTANCE</span> <span class="o">?:</span> <span class="nf">synchronized</span><span class="p">(</span><span class="k">this</span><span class="p">)</span> <span class="p">{</span>
+                <span class="nc">INSTANCE</span> <span class="o">?:</span> <span class="nc">FcmRepositoryImpl</span><span class="p">().</span><span class="nf">also</span> <span class="p">{</span> <span class="nc">INSTANCE</span> <span class="p">=</span> <span class="n">it</span> <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+</code></pre></div></div>
+
+<p>여기서 사용된 <strong><code class="language-plaintext highlighter-rouge">@Volatile</code></strong>은 여러 CPU 캐시 간의 데이터 불일치를 막고 메인 메모리에서 직접 값을 읽게 하여, 멀티스레드 환경에서도 원자적인 인스턴스 생성을 보장합니다.</p>
+
+<h4 id="3-관심사의-분리-soc">(3) 관심사의 분리 (SoC)</h4>
+<p><code class="language-plaintext highlighter-rouge">FcmRepositoryImpl</code>은 내부적으로 <code class="language-plaintext highlighter-rouge">MutableSharedFlow</code>를 통해 메시지를 발행(<code class="language-plaintext highlighter-rouge">emitMessage</code>)하고, 외부에는 오직 읽기 전용인 <code class="language-plaintext highlighter-rouge">Flow</code>만 반환(<code class="language-plaintext highlighter-rouge">getMessageFlow</code>)합니다.
+이러한 설계는 UI 레이어(Activity/Compose)가 데이터 발행 로직에 직접 관여하지 못하게 차단하고, 오직 데이터의 변화만 감지하도록 하여 <strong>데이터의 흐름을 단방향(UDA)</strong>으로 유지합니다.</p>
+
+<hr />
+
+<h3 id="5-마치며-테스트-그-이상의-수확">5. 마치며: 테스트 그 이상의 수확</h3>
+<p><img src="../../images/fcm_screenshot.png" alt="설정화면" /></p>
+
+<p>처음에는 단순히 “알림이 잘 오나?” 확인하려 시작한 테스트였지만, 그 과정에서 <strong>동시성 제어, 서비스 컴포넌트의 역할, 그리고 비동기 작업을 중단 함수로 변환하는 기법</strong>까지 깊게 고민해 볼 수 있었습니다.</p>
+
+<p>단순히 기능을 구현하는 것을 넘어, <strong>“이 코드가 왜 이렇게 설계되었을까?”</strong>를 질문하고 그 해답을 소스 코드 안에서 찾는 과정이 개발자로서 한 단계 더 성장하는 밑거름이 된다는 것을 다시 한번 느꼈습니다.</p>
 
 </div>
 
